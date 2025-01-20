@@ -1,6 +1,5 @@
 import pymunk
 import pymunk.pygame_util
-from pymunk import Vec2d
 import numpy as np
 import pygame
 
