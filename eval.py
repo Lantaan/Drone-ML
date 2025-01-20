@@ -2,10 +2,10 @@ from stable_baselines3 import PPO
 import time
 from environment.setup_env import setup_env
 
-continuous_mode = True #if True, after completing one episode the next one will start automatically
-random_action = False #if True, the agent will take actions randomly
+continuous_mode = True  # if True, after completing one episode the next one will start automatically
+random_action = False  # if True, the agent will take actions randomly
 
-render_sim = True #if True, a graphic is generated
+render_sim = True  # if True, a graphic is generated
 
 env = setup_env(render_sim)
 
