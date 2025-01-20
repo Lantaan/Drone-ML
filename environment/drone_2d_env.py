@@ -1,9 +1,8 @@
-from Drone import *
-from event_handler import *
+from environment.Drone import *
+from environment.event_handler import *
 
 import gym
 from gym import spaces
-from gym.utils import seeding
 import numpy as np
 import random
 import os
@@ -71,11 +70,11 @@ class Drone2dEnv(gym.Env):
         self.clock = pygame.time.Clock()
 
         script_dir = os.path.dirname(__file__)
-        icon_path = os.path.join("img", "icon.png")
+        icon_path = os.path.join("..", "img", "icon.png")
         icon_path = os.path.join(script_dir, icon_path)
         pygame.display.set_icon(pygame.image.load(icon_path))
 
-        img_path = os.path.join("img", "shade.png")
+        img_path = os.path.join("..", "img", "shade.png")
         img_path = os.path.join(script_dir, img_path)
         self.shade_image = pygame.image.load(img_path)
 

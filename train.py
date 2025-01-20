@@ -18,4 +18,4 @@ env = gym.make('drone-2d-custom-v0', render_sim=False, render_path=True, render_
 model = PPO("MlpPolicy", env, verbose=1)
 
 model.learn(total_timesteps=60000)
-model.save('new_agent')
+model.save('trained/new_agent')
