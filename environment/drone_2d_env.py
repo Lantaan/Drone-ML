@@ -1,8 +1,11 @@
-from environment.Drone import *
-from environment.event_handler import *
+from environment.drone import Drone
+from environment.event_handler import pygame_events
 
 import gym
-from gym import spaces
+import gym.spaces
+import pygame
+import pymunk
+import pymunk.pygame_util
 import numpy as np
 import random
 import os
@@ -58,11 +61,11 @@ class Drone2dEnv(gym.Env):
         # Defining spaces for action and observation
         min_action = np.array([-1, -1], dtype=np.float32)
         max_action = np.array([1, 1], dtype=np.float32)
-        self.action_space = spaces.Box(low=min_action, high=max_action, dtype=np.float32)
+        self.action_space = gym.spaces.Box(low=min_action, high=max_action, dtype=np.float32)
 
         min_observation = np.array([-1, -1, -1, -1, -1, -1, -1, -1], dtype=np.float32)
         max_observation = np.array([1, 1, 1, 1, 1, 1, 1, 1], dtype=np.float32)
-        self.observation_space = spaces.Box(low=min_observation, high=max_observation, dtype=np.float32)
+        self.observation_space = gym.spaces.Box(low=min_observation, high=max_observation, dtype=np.float32)
 
     def init_pygame(self):
         pygame.init()
@@ -81,7 +84,7 @@ class Drone2dEnv(gym.Env):
 
     def init_pymunk(self):
         self.space = pymunk.Space()
-        self.space.gravity = Vec2d(0, -1000)
+        self.space.gravity = pymunk.Vec2d(0, -1000)
 
         if self.render_sim is True:
             self.draw_options = pymunk.pygame_util.DrawOptions(self.screen)
@@ -105,8 +108,8 @@ class Drone2dEnv(gym.Env):
         self.left_force = (action[0] / 2 + 0.5) * self.froce_scale
         self.right_force = (action[1] / 2 + 0.5) * self.froce_scale
 
-        self.drone.frame_shape.body.apply_force_at_local_point(Vec2d(0, self.left_force), (-self.drone_radius, 0))
-        self.drone.frame_shape.body.apply_force_at_local_point(Vec2d(0, self.right_force), (self.drone_radius, 0))
+        self.drone.frame_shape.body.apply_force_at_local_point(pymunk.Vec2d(0, self.left_force), (-self.drone_radius, 0))
+        self.drone.frame_shape.body.apply_force_at_local_point(pymunk.Vec2d(0, self.right_force), (self.drone_radius, 0))
 
         self.space.step(1.0 / 60)
         self.current_time_step += 1
@@ -228,13 +231,13 @@ class Drone2dEnv(gym.Env):
         if self.initial_throw is True:
             throw_angle = random.random() * 2 * np.pi
             throw_force = random.uniform(0, 25000)
-            throw = Vec2d(np.cos(throw_angle) * throw_force, np.sin(throw_angle) * throw_force)
+            throw = pymunk.Vec2d(np.cos(throw_angle) * throw_force, np.sin(throw_angle) * throw_force)
 
             self.drone.frame_shape.body.apply_force_at_world_point(throw, self.drone.frame_shape.body.position)
 
             throw_rotation = random.uniform(-3000, 3000)
-            self.drone.frame_shape.body.apply_force_at_local_point(Vec2d(0, throw_rotation), (-self.drone_radius, 0))
-            self.drone.frame_shape.body.apply_force_at_local_point(Vec2d(0, -throw_rotation), (self.drone_radius, 0))
+            self.drone.frame_shape.body.apply_force_at_local_point(pymunk.Vec2d(0, throw_rotation), (-self.drone_radius, 0))
+            self.drone.frame_shape.body.apply_force_at_local_point(pymunk.Vec2d(0, -throw_rotation), (self.drone_radius, 0))
 
             self.space.step(1.0 / 60)
             if self.render_sim is True and self.render_path is True: self.add_postion_to_drop_path()

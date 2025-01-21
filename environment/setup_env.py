@@ -1,4 +1,6 @@
-from environment.drone_2d_env import *
+from environment.drone_2d_env import Drone2dEnv
+
+import gym
 from gym.envs.registration import register
 
 

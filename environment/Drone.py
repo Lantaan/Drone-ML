@@ -1,7 +1,6 @@
-import pymunk
-import pymunk.pygame_util
-import numpy as np
 import pygame
+import pymunk
+import numpy as np
 
 
 class Drone():
