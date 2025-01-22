@@ -47,7 +47,7 @@ class Drone2dEnv(gym.Env):
         self.initial_throw = initial_throw
         self.change_target = change_target
         self.wind_intensity = wind_intensity
-        self.wind_scale = wind_intensity * 250
+        self.wind_scale = np.array([[random.choice((-1, 1))], [1]]) * wind_intensity * 250
 
         # Initial values
         self.first_step = True
@@ -56,6 +56,7 @@ class Drone2dEnv(gym.Env):
         self.current_time_step = 0
         self.left_force = -1
         self.right_force = -1
+        self.wind_force = np.array([0, 0])
 
         # Generating target position
         self.x_target = random.uniform(50, 750)
@@ -287,6 +288,6 @@ class Drone2dEnv(gym.Env):
         self.y_target = y
 
     def generate_wind_field(self):
-        model = gstools.Gaussian(dim=2, var=1, len_scale=50, anis=0.75, angles=random.uniform(-np.pi/4, np.pi/4))
+        model = gstools.Gaussian(dim=2, var=1, len_scale=80, anis=0.75, angles=random.uniform(0, 2*np.pi))
         srf = gstools.SRF(model, generator='VectorField')
         return srf
