@@ -6,6 +6,7 @@ import gym.spaces
 import pygame
 import pymunk
 import pymunk.pygame_util
+import gstools
 import numpy as np
 import random
 import os
@@ -24,7 +25,7 @@ class Drone2dEnv(gym.Env):
     """
 
     def __init__(self, render_sim=False, render_path=True, render_shade=True, shade_distance=70,
-                 n_steps=500, n_fall_steps=10, change_target=False, initial_throw=True):
+                 n_steps=500, n_fall_steps=10, change_target=False, initial_throw=True, wind_intensity=0.0):
 
         self.render_sim = render_sim
         self.render_path = render_path
@@ -42,9 +43,11 @@ class Drone2dEnv(gym.Env):
         self.max_time_steps = n_steps
         self.stabilisation_delay = n_fall_steps
         self.drone_shade_distance = shade_distance
-        self.froce_scale = 1000
+        self.force_scale = 1000
         self.initial_throw = initial_throw
         self.change_target = change_target
+        self.wind_intensity = wind_intensity
+        self.wind_scale = wind_intensity * 250
 
         # Initial values
         self.first_step = True
@@ -84,7 +87,9 @@ class Drone2dEnv(gym.Env):
 
     def init_pymunk(self):
         self.space = pymunk.Space()
-        self.space.gravity = pymunk.Vec2d(0, -1000)
+        self.space.gravity = pymunk.Vec2d(0, -981)
+
+        self.wind_field = self.generate_wind_field()
 
         if self.render_sim is True:
             self.draw_options = pymunk.pygame_util.DrawOptions(self.screen)
@@ -105,11 +110,15 @@ class Drone2dEnv(gym.Env):
             if self.render_sim is True and self.render_shade is True: self.add_drone_shade()
             self.info = self.initial_movement()
 
-        self.left_force = (action[0] / 2 + 0.5) * self.froce_scale
-        self.right_force = (action[1] / 2 + 0.5) * self.froce_scale
+        self.left_force = (action[0] / 2 + 0.5) * self.force_scale
+        self.right_force = (action[1] / 2 + 0.5) * self.force_scale
 
         self.drone.frame_shape.body.apply_force_at_local_point(pymunk.Vec2d(0, self.left_force), (-self.drone_radius, 0))
         self.drone.frame_shape.body.apply_force_at_local_point(pymunk.Vec2d(0, self.right_force), (self.drone_radius, 0))
+
+        self.wind_force = self.wind_field(self.drone.frame_shape.body.position) * self.wind_scale
+
+        self.drone.frame_shape.body.apply_force_at_local_point(pymunk.Vec2d(*self.wind_force), (0, 0))
 
         self.space.step(1.0 / 60)
         self.current_time_step += 1
@@ -194,14 +203,14 @@ class Drone2dEnv(gym.Env):
         # Drawing vectors of motor forces
         vector_scale = 0.05
         l_x_1, l_y_1 = self.drone.frame_shape.body.local_to_world((-self.drone_radius, 0))
-        l_x_2, l_y_2 = self.drone.frame_shape.body.local_to_world((-self.drone_radius, self.froce_scale * vector_scale))
+        l_x_2, l_y_2 = self.drone.frame_shape.body.local_to_world((-self.drone_radius, self.force_scale * vector_scale))
         pygame.draw.line(self.screen, (179, 179, 179), (l_x_1, 800 - l_y_1), (l_x_2, 800 - l_y_2), 4)
 
         l_x_2, l_y_2 = self.drone.frame_shape.body.local_to_world((-self.drone_radius, self.left_force * vector_scale))
         pygame.draw.line(self.screen, (255, 0, 0), (l_x_1, 800 - l_y_1), (l_x_2, 800 - l_y_2), 4)
 
         r_x_1, r_y_1 = self.drone.frame_shape.body.local_to_world((self.drone_radius, 0))
-        r_x_2, r_y_2 = self.drone.frame_shape.body.local_to_world((self.drone_radius, self.froce_scale * vector_scale))
+        r_x_2, r_y_2 = self.drone.frame_shape.body.local_to_world((self.drone_radius, self.force_scale * vector_scale))
         pygame.draw.line(self.screen, (179, 179, 179), (r_x_1, 800 - r_y_1), (r_x_2, 800 - r_y_2), 4)
 
         r_x_2, r_y_2 = self.drone.frame_shape.body.local_to_world((self.drone_radius, self.right_force * vector_scale))
@@ -221,7 +230,8 @@ class Drone2dEnv(gym.Env):
 
     def reset(self):
         self.__init__(self.render_sim, self.render_path, self.render_shade, self.drone_shade_distance,
-                      self.max_time_steps, self.stabilisation_delay, self.change_target, self.initial_throw)
+                      self.max_time_steps, self.stabilisation_delay, self.change_target, self.initial_throw,
+                      self.wind_intensity)
         return self.get_observation()
 
     def close(self):
@@ -275,3 +285,8 @@ class Drone2dEnv(gym.Env):
     def change_target_point(self, x, y):
         self.x_target = x
         self.y_target = y
+
+    def generate_wind_field(self):
+        model = gstools.Gaussian(dim=2, var=1, len_scale=50, anis=0.75, angles=random.uniform(-np.pi/4, np.pi/4))
+        srf = gstools.SRF(model, generator='VectorField')
+        return srf
