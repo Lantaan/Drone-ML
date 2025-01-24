@@ -1,5 +1,6 @@
-from environment.drone import Drone
+from environment.Drone import Drone
 from environment.event_handler import pygame_events
+from config import wind_len_scale
 
 import gym
 import gym.spaces
@@ -288,6 +289,6 @@ class Drone2dEnv(gym.Env):
         self.y_target = y
 
     def generate_wind_field(self):
-        model = gstools.Gaussian(dim=2, var=1, len_scale=80, anis=0.75, angles=random.uniform(0, 2*np.pi))
+        model = gstools.Gaussian(dim=2, var=1, len_scale=wind_len_scale, anis=0.75, angles=random.uniform(0, 2*np.pi))
         srf = gstools.SRF(model, generator='VectorField')
         return srf

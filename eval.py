@@ -3,7 +3,7 @@ from environment.setup_env import setup_env
 from stable_baselines3 import PPO
 import time
 
-env = setup_env(True, True, 0.5)
+env = setup_env(True, True)
 
 model = PPO.load("trained/new_agent.zip")
 

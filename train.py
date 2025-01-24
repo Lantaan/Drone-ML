@@ -2,7 +2,7 @@ from stable_baselines3 import PPO
 from environment.setup_env import setup_env
 from config import training_time, train_log_policy
 
-env = setup_env(False)
+env = setup_env(False, True)
 
 model = PPO("MlpPolicy", env, verbose=train_log_policy)
 
