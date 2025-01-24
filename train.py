@@ -1,10 +1,11 @@
 from stable_baselines3 import PPO
 from environment.setup_env import setup_env
-from config import training_time, train_log_policy
 
-env = setup_env(False, True)
 
-model = PPO("MlpPolicy", env, verbose=train_log_policy)
+def train(config):
+    env = setup_env(False, True, config)
 
-model.learn(total_timesteps=training_time)
-model.save('trained/new_agent')
+    model = PPO("MlpPolicy", env, verbose=config["train_log_policy"])
+
+    model.learn(total_timesteps=config["training_time"])
+    model.save('trained/new_agent')
