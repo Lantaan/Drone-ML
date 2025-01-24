@@ -7,5 +7,5 @@ def train(config):
 
     model = PPO("MlpPolicy", env, verbose=config["train_log_policy"])
 
-    model.learn(total_timesteps=config["training_time"])
+    model.learn(total_timesteps=config["training_time"], progress_bar=True)
     model.save('trained/new_agent')
