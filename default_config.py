@@ -1,6 +1,6 @@
 default_config = {
     # time in milliseconds to allot to training
-    "training_time": 60_0000,
+    "training_time": 600_000,
     # which logs should be displayed in the console during training
     # 0: no info, 1: info messages, 2: debug messages
     "train_log_policy": 1,

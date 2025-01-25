@@ -1,4 +1,5 @@
 import matplotlib.pyplot as plt
+import numpy as np
 from environment.setup_env import setup_env
 from stable_baselines3 import PPO
 import time
@@ -6,12 +7,12 @@ from default_config import default_config
 from train import train
 
 config_property_to_change = "training_time"
-values = list(range(60_000, 3 * 60_000, 60_000))
+values = list(range(2*60_000, 33*60_000, 4*60_000))
 
 base_config = default_config
 del base_config[config_property_to_change]
 
-measurement_iterations_per_value = 100
+measurement_iterations_per_value = 1000
 
 plot_y = []
 
@@ -52,3 +53,4 @@ for value in values:
 fig = plt.figure()
 plt.plot(values, plot_y)
 fig.savefig('plot.png')
+np.savetxt("plot_data.csv", (values, plot_y), delimiter=",")
