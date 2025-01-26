@@ -9,4 +9,6 @@ default_config = {
     "wind_intensity": 0.5,
     # determines how fast the gradient of the wind field changes
     "wind_len_scale": 80,
+    # determines if the wind field should be rendered
+    "render_wind": True
 }

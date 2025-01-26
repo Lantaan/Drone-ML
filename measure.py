@@ -7,7 +7,7 @@ from default_config import default_config
 from train import train
 
 config_property_to_change = "training_time"
-values = list(range(2*60_000, 33*60_000, 4*60_000))
+values = list(range(2*60_000, 3*60_000, 4*60_000))
 
 base_config = default_config
 del base_config[config_property_to_change]

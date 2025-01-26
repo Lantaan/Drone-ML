@@ -24,6 +24,8 @@ class Drone2dEnv(gym.Env):
     change_target: (bool) if true, mouse click change target positions
     initial_throw: (bool) if true, the drone is initially thrown with random force
     wind_intensity: (float) factor with which the wind force is multiplied (0.0 - 1.0)
+    wind_len_scale: (int) determines how fast the gradient of the wind field changes
+    render_wind: (bool) if true, the wind field is drawn, else the borders are drawn
     """
 
     def __init__(self, render_sim=False, render_path=True, render_shade=True, shade_distance=70,
