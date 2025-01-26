@@ -1,4 +1,4 @@
-from environment.Drone import Drone
+from environment.drone import Drone
 from environment.event_handler import pygame_events
 
 import gym
@@ -7,6 +7,7 @@ import pygame
 import pymunk
 import pymunk.pygame_util
 import gstools
+import matplotlib.pyplot as plt
 import numpy as np
 import random
 import os
@@ -22,10 +23,15 @@ class Drone2dEnv(gym.Env):
     n_fall_steps: (int) the number of initial steps for which the drone can't do anything
     change_target: (bool) if true, mouse click change target positions
     initial_throw: (bool) if true, the drone is initially thrown with random force
+    wind_intensity: (float) factor with which the wind force is multiplied (0.0 - 1.0)
     """
 
     def __init__(self, render_sim=False, render_path=True, render_shade=True, shade_distance=70,
-                 n_steps=500, n_fall_steps=10, change_target=False, initial_throw=True, wind_intensity=0.0, wind_len_scale=100):
+                 n_steps=500, n_fall_steps=10, change_target=False, initial_throw=True, wind_intensity=0.0, 
+                 wind_len_scale=100, render_wind=True):
+
+        if wind_intensity < 0 or wind_intensity > 1:
+            raise ValueError("Wind intensity must be between 0 and 1")
 
         self.render_sim = render_sim
         self.render_path = render_path
@@ -39,6 +45,11 @@ class Drone2dEnv(gym.Env):
             self.path_drone_shade = []
 
         self.init_pymunk()
+        
+        self.wind_intensity = wind_intensity
+        self.render_wind = render_wind
+
+        if wind_intensity > 0: self.init_wind()
 
         # Parameters
         self.max_time_steps = n_steps
@@ -47,8 +58,6 @@ class Drone2dEnv(gym.Env):
         self.force_scale = 1000
         self.initial_throw = initial_throw
         self.change_target = change_target
-        self.wind_intensity = wind_intensity
-        self.wind_scale = np.array([[random.choice((-1, 1))], [1]]) * wind_intensity * 250
 
         # Initial values
         self.first_step = True
@@ -64,13 +73,11 @@ class Drone2dEnv(gym.Env):
         self.y_target = random.uniform(50, 750)
 
         # Defining spaces for action and observation
-        min_action = np.array([-1, -1], dtype=np.float32)
-        max_action = np.array([1, 1], dtype=np.float32)
-        self.action_space = gym.spaces.Box(low=min_action, high=max_action, dtype=np.float32)
+        action_lim = np.ones(2, dtype=np.float32)
+        self.action_space = gym.spaces.Box(low=-action_lim, high=action_lim, dtype=np.float32)
 
-        min_observation = np.array([-1, -1, -1, -1, -1, -1, -1, -1], dtype=np.float32)
-        max_observation = np.array([1, 1, 1, 1, 1, 1, 1, 1], dtype=np.float32)
-        self.observation_space = gym.spaces.Box(low=min_observation, high=max_observation, dtype=np.float32)
+        observation_lim = np.ones(8, dtype=np.float32)
+        self.observation_space = gym.spaces.Box(low=-observation_lim, high=observation_lim, dtype=np.float32)
 
     def init_pygame(self):
         pygame.init()
@@ -79,6 +86,7 @@ class Drone2dEnv(gym.Env):
         self.clock = pygame.time.Clock()
 
         script_dir = os.path.dirname(__file__)
+
         icon_path = os.path.join("..", "img", "icon.png")
         icon_path = os.path.join(script_dir, icon_path)
         pygame.display.set_icon(pygame.image.load(icon_path))
@@ -90,8 +98,6 @@ class Drone2dEnv(gym.Env):
     def init_pymunk(self):
         self.space = pymunk.Space()
         self.space.gravity = pymunk.Vec2d(0, -981)
-
-        self.wind_field = self.generate_wind_field()
 
         if self.render_sim is True:
             self.draw_options = pymunk.pygame_util.DrawOptions(self.screen)
@@ -106,6 +112,33 @@ class Drone2dEnv(gym.Env):
 
         self.drone_radius = self.drone.drone_radius
 
+    def init_wind(self):
+        self.wind_field = self.generate_wind_field()
+        wind_modifier = np.array([random.choice((-1, 1)), -1])
+        self.wind_scale = wind_modifier.reshape(-1, 1) * self.wind_intensity * 250
+
+        if self.render_sim is True and self.render_wind is True:
+            fig, ax = plt.subplots(figsize=(8, 8))
+            plt.subplots_adjust(left=0.0, bottom=0.0, right=1.0, top=1.0, wspace=0.0, hspace=0.0)
+
+            x = np.linspace(0, 800, 100)
+            y = np.linspace(0, 800, 100)
+
+            field = self.wind_field((x, y), mesh_type="structured")
+            field = wind_modifier.reshape(-1, 1, 1) * field
+            norm = np.sqrt(field[0, :].T ** 2 + field[1, :].T ** 2)
+
+            ax.streamplot(x, y, field[0, :].T, field[1, :].T, color=norm, linewidth=0.75*norm)
+            fig.savefig("img/wind.png")
+
+            plt.close()
+
+            script_dir = os.path.dirname(__file__)
+            img_path = os.path.join("..", "img", "wind.png")
+            img_path = os.path.join(script_dir, img_path)
+            self.wind_image = pygame.image.load(img_path)
+            self.wind_image = pygame.transform.scale(self.wind_image, (800, 800))
+
     def step(self, action):
         if self.first_step is True:
             if self.render_sim is True and self.render_path is True: self.add_postion_to_drop_path()
@@ -118,9 +151,9 @@ class Drone2dEnv(gym.Env):
         self.drone.frame_shape.body.apply_force_at_local_point(pymunk.Vec2d(0, self.left_force), (-self.drone_radius, 0))
         self.drone.frame_shape.body.apply_force_at_local_point(pymunk.Vec2d(0, self.right_force), (self.drone_radius, 0))
 
-        self.wind_force = self.wind_field(self.drone.frame_shape.body.position) * self.wind_scale
-
-        self.drone.frame_shape.body.apply_force_at_local_point(pymunk.Vec2d(*self.wind_force), (0, 0))
+        if self.wind_intensity > 0:
+            self.wind_force = self.wind_field(self.drone.frame_shape.body.position) * self.wind_scale
+            self.drone.frame_shape.body.apply_force_at_local_point(pymunk.Vec2d(*self.wind_force), (0, 0))
 
         self.space.step(1.0 / 60)
         self.current_time_step += 1
@@ -189,9 +222,14 @@ class Drone2dEnv(gym.Env):
 
         pygame_events(self.space, self, self.change_target)
         self.screen.fill((243, 243, 243))
-        pygame.draw.rect(self.screen, (24, 114, 139), pygame.Rect(0, 0, 800, 800), 8)
-        pygame.draw.rect(self.screen, (33, 158, 188), pygame.Rect(50, 50, 700, 700), 4)
-        pygame.draw.rect(self.screen, (142, 202, 230), pygame.Rect(200, 200, 400, 400), 4)
+
+        # Drawing wind field
+        if self.wind_intensity > 0 and self.render_wind is True:
+            self.screen.blit(self.wind_image, (0, 0))
+        else:    
+            pygame.draw.rect(self.screen, (24, 114, 139), pygame.Rect(0, 0, 800, 800), 8)
+            pygame.draw.rect(self.screen, (33, 158, 188), pygame.Rect(50, 50, 700, 700), 4)
+            pygame.draw.rect(self.screen, (142, 202, 230), pygame.Rect(200, 200, 400, 400), 4)
 
         # Drawing done's shade
         if len(self.path_drone_shade):
@@ -218,7 +256,7 @@ class Drone2dEnv(gym.Env):
         r_x_2, r_y_2 = self.drone.frame_shape.body.local_to_world((self.drone_radius, self.right_force * vector_scale))
         pygame.draw.line(self.screen, (255, 0, 0), (r_x_1, 800 - r_y_1), (r_x_2, 800 - r_y_2), 4)
 
-        pygame.draw.circle(self.screen, (255, 0, 0), (self.x_target, 800 - self.y_target), 5)
+        pygame.draw.circle(self.screen, (255, 0, 0), (self.x_target, 800 - self.y_target), 8)
 
         # Drawing drone's path
         if len(self.flight_path) > 2:

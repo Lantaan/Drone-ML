@@ -174,3 +174,4 @@ cython_debug/
 .idea/
 anaconda_projects/
 trained/
+img/wind.png
