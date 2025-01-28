@@ -4,13 +4,12 @@ import time
 from default_config import default_config
 from train import train
 
-train(default_config)
+agent_name = "new_agent"
+train(default_config, agent_name)
 
 env = setup_env(True, True, default_config)
 
-model = PPO.load("trained/new_agent.zip")
-
-model.set_env(env)
+model = PPO.load(f"trained/{agent_name}.zip", env=env)
 
 random_seed = int(time.time())
 model.set_random_seed(random_seed)
@@ -22,10 +21,9 @@ try:
         env.render()
         action, _states = model.predict(obs)
 
-        obs, reward, done, info = env.step(action)
+        obs, reward, terminated, truncated, info = env.step(action)
 
-        if done is True:
+        if terminated or truncated:
             state = env.reset()
-
 finally:
     env.close()

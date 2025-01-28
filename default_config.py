@@ -1,12 +1,14 @@
 default_config = {
     # time in milliseconds to allot to training
-    "training_time": 600_000,
+    "training_time": 900_000,
     # which logs should be displayed in the console during training
     # 0: no info, 1: info messages, 2: debug messages
     "train_log_policy": 1,
+    # in which formats the logs should be saved
+    "train_log_formats": ["stdout", "csv", "log", "tensorboard"],
 
     # determines the wind strength
-    "wind_intensity": 0.5,
+    "wind_intensity": 0.3,
     # determines how fast the gradient of the wind field changes
     "wind_len_scale": 80,
     # determines if the wind field should be rendered

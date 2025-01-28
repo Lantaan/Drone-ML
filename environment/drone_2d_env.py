@@ -1,8 +1,8 @@
 from environment.drone import Drone
 from environment.event_handler import pygame_events
 
-import gym
-import gym.spaces
+import gymnasium as gym
+import gymnasium.spaces
 import pygame
 import pymunk
 import pymunk.pygame_util
@@ -63,7 +63,8 @@ class Drone2dEnv(gym.Env):
 
         # Initial values
         self.first_step = True
-        self.done = False
+        self.terminated = False
+        self.truncated = False
         self.info = {}
         self.current_time_step = 0
         self.left_force = -1
@@ -76,10 +77,10 @@ class Drone2dEnv(gym.Env):
 
         # Defining spaces for action and observation
         action_lim = np.ones(2, dtype=np.float32)
-        self.action_space = gym.spaces.Box(low=-action_lim, high=action_lim, dtype=np.float32)
+        self.action_space = gymnasium.spaces.Box(low=-action_lim, high=action_lim, dtype=np.float32)
 
         observation_lim = np.ones(8, dtype=np.float32)
-        self.observation_space = gym.spaces.Box(low=-observation_lim, high=observation_lim, dtype=np.float32)
+        self.observation_space = gymnasium.spaces.Box(low=-observation_lim, high=observation_lim, dtype=np.float32)
 
     def init_pygame(self):
         pygame.init()
@@ -180,14 +181,14 @@ class Drone2dEnv(gym.Env):
 
         # Stops episode, when drone is out of range or overlaps
         if np.abs(obs[3]) == 1 or np.abs(obs[6]) == 1 or np.abs(obs[7]) == 1:
-            self.done = True
+            self.truncated = True
             reward = -10
 
         # Stops episode, when time is up
         if self.current_time_step == self.max_time_steps:
-            self.done = True
+            self.terminated = True
 
-        return obs, reward, self.done, self.info
+        return obs, reward, self.terminated, self.truncated, self.info
 
     def get_observation(self):
         velocity_x, velocity_y = self.drone.frame_shape.body.velocity_at_local_point((0, 0))
@@ -270,11 +271,11 @@ class Drone2dEnv(gym.Env):
         pygame.display.flip()
         self.clock.tick(60)
 
-    def reset(self):
+    def reset(self, **kwargs):
         self.__init__(self.render_sim, self.render_path, self.render_shade, self.drone_shade_distance,
                       self.max_time_steps, self.stabilisation_delay, self.change_target, self.initial_throw,
                       self.wind_intensity)
-        return self.get_observation()
+        return self.get_observation(), self.info
 
     def close(self):
         pygame.quit()
