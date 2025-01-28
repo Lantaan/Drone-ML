@@ -6,11 +6,11 @@ from default_config import default_config
 
 
 def train(config, agent_name):
-    vec_env = setup_vec_env(4, False, False, config)
+    vec_env = setup_vec_env(8, False, False, config)
 
     logger = configure(f"logs/{agent_name}/", config["train_log_formats"])
 
-    model = PPO("MlpPolicy", vec_env, verbose=config["train_log_policy"])
+    model = PPO("MlpPolicy", vec_env, learning_rate=config["learning_rate"], verbose=config["train_log_policy"])
 
     model.set_logger(logger)
     model.learn(total_timesteps=config["training_time"], progress_bar=True)
